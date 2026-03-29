@@ -1,140 +1,131 @@
 #!/bin/bash
-# Internal build script - runs inside MSYS2 MINGW64
+# PC Principal PGP - Fixed Build Script with all dependencies
 
-set -e  # Exit on error
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="$SCRIPT_DIR/build"
+OUTPUT_DIR="$SCRIPT_DIR/PCPrincipalPGP_Portable"
+MSYS_BIN="/c/msys64/mingw64/bin"
 
 echo "========================================"
 echo "  PC Principal PGP - Build Script"
 echo "========================================"
 echo ""
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="${SCRIPT_DIR}/build"
-DIST_DIR="${SCRIPT_DIR}/PCPrincipalPGP_Portable"
-
-echo -e "${YELLOW}Source:${NC} ${SCRIPT_DIR}"
-echo -e "${YELLOW}Build:${NC}  ${BUILD_DIR}"
-echo -e "${YELLOW}Output:${NC} ${DIST_DIR}"
+echo "Source: $SCRIPT_DIR"
+echo "Build:  $BUILD_DIR"
+echo "Output: $OUTPUT_DIR"
 echo ""
 
-# Function to check if package is installed
-package_installed() {
-    pacman -Q "$1" &>/dev/null
-}
-
-# Install dependencies
+# [1/6] Check dependencies
 echo "[1/6] Checking dependencies..."
+command -v cmake >/dev/null 2>&1 || { echo "cmake required but not installed."; exit 1; }
+command -v ninja >/dev/null 2>&1 || { echo "ninja required but not installed."; exit 1; }
+command -v g++ >/dev/null 2>&1 || { echo "g++ required but not installed."; exit 1; }
+pkg-config --exists gpgme || { echo "gpgme not found. Install with: pacman -S mingw-w64-x86_64-gpgme"; exit 1; }
+pkg-config --exists libsodium || { echo "libsodium not found. Install with: pacman -S mingw-w64-x86_64-libsodium"; exit 1; }
+echo "All dependencies ready!"
 
-# Update package database (silently)
-pacman -Sy --noconfirm &>/dev/null
-
-DEPS=(
-    "mingw-w64-x86_64-qt6-base"
-    "mingw-w64-x86_64-qt6-tools"
-    "mingw-w64-x86_64-gpgme"
-    "mingw-w64-x86_64-libsodium"
-    "mingw-w64-x86_64-cmake"
-    "mingw-w64-x86_64-ninja"
-    "mingw-w64-x86_64-gcc"
-    "mingw-w64-x86_64-pkg-config"
-)
-
-for dep in "${DEPS[@]}"; do
-    if ! package_installed "$dep"; then
-        echo "Installing ${dep}..."
-        pacman -S --noconfirm --needed "$dep" 2>/dev/null || {
-            echo -e "${RED}Failed to install ${dep}${NC}"
-            exit 1
-        }
-    fi
-done
-
-echo -e "${GREEN}All dependencies ready!${NC}"
+# [2/6] Clean previous build
 echo ""
-
-# Clean previous build
 echo "[2/6] Cleaning previous build..."
-rm -rf "${BUILD_DIR}"
-rm -rf "${DIST_DIR}"
-mkdir -p "${BUILD_DIR}"
-mkdir -p "${DIST_DIR}"
+rm -rf "$BUILD_DIR"
+rm -rf "$OUTPUT_DIR"
 
-# Configure with CMake
+# [3/6] Configure with CMake
 echo ""
 echo "[3/6] Configuring with CMake..."
-cd "${BUILD_DIR}"
+mkdir -p "$BUILD_DIR"
+cd "$BUILD_DIR"
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ "$SCRIPT_DIR"
 
-cmake -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="${MINGW_PREFIX}" \
-    -DCMAKE_C_COMPILER=gcc \
-    -DCMAKE_CXX_COMPILER=g++ \
-    "${SCRIPT_DIR}" 2>&1
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}ERROR: CMake configuration failed!${NC}"
-    read -p "Press Enter to continue..."
-    exit 1
-fi
-
-# Build
+# [4/6] Building
 echo ""
 echo "[4/6] Building... (this may take a few minutes)"
-cmake --build . --parallel 2>&1
+cd "$BUILD_DIR"
+ninja -j$(nproc)
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}ERROR: Build failed!${NC}"
-    read -p "Press Enter to continue..."
-    exit 1
+# [5/6] Deploying Qt dependencies
+echo ""
+echo "[5/6] Deploying Qt dependencies..."
+windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime "$BUILD_DIR/PCPrincipalPGP.exe"
+
+# [6/6] Copy to portable folder with ALL dependencies
+echo ""
+echo "[6/6] Deploying ALL dependencies..."
+mkdir -p "$OUTPUT_DIR"
+cp -r "$BUILD_DIR"/* "$OUTPUT_DIR/"
+
+# Copy additional Qt/MinGW dependencies that windeployqt misses
+echo "Copying additional DLLs..."
+
+# Core ICU libraries (required by Qt)
+cp "$MSYS_BIN/icuin78.dll" "$OUTPUT_DIR/" 2>/dev/null || \
+cp "$MSYS_BIN/libicuin78.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/icuuc78.dll" "$OUTPUT_DIR/" 2>/dev/null || \
+cp "$MSYS_BIN/libicuuc78.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/icudt78.dll" "$OUTPUT_DIR/" 2>/dev/null || \
+cp "$MSYS_BIN/libicudt78.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+
+# Double conversion library
+cp "$MSYS_BIN/libdouble-conversion.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+
+# libsodium - CRITICAL for encryption
+cp "$MSYS_BIN/libsodium-26.dll" "$OUTPUT_DIR/" 2>/dev/null || \
+cp "$MSYS_BIN/libsodium.dll" "$OUTPUT_DIR/" 2>/dev/null || \
+cp "$MSYS_BIN/libsodium-23.dll" "$OUTPUT_DIR/" 2>/dev/null || \
+{ echo "WARNING: libsodium DLL not found!"; }
+
+# Additional Qt dependencies
+cp "$MSYS_BIN/libpcre2-16-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libzstd.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libharfbuzz-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libfreetype-6.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libpng16-16.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libbz2-1.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libbrotlidec.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libbrotlicommon.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libglib-2.0-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libintl-8.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libiconv-2.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libgraphite2.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+
+# GPGME and dependencies
+cp "$MSYS_BIN/libgpgme-11.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libgpg-error-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libassuan-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libgcrypt-20.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libgnutls-30.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libnettle-8.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libhogweed-6.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libgmp-10.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libidn2-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libunistring-5.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libtasn1-6.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+cp "$MSYS_BIN/libp11-kit-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+
+# Create required directories
+mkdir -p "$OUTPUT_DIR/keys/public"
+mkdir -p "$OUTPUT_DIR/keys/private"
+mkdir -p "$OUTPUT_DIR/profiles"
+mkdir -p "$OUTPUT_DIR/temp"
+
+# Copy GPG executables if they exist
+if [ -d "/c/Program Files (x86)/gnupg/bin" ]; then
+    cp "/c/Program Files (x86)/gnupg/bin/gpg.exe" "$OUTPUT_DIR/" 2>/dev/null || true
+    cp "/c/Program Files (x86)/gnupg/bin/gpgconf.exe" "$OUTPUT_DIR/" 2>/dev/null || true
+elif [ -d "/c/Program Files/gnupg/bin" ]; then
+    cp "/c/Program Files/gnupg/bin/gpg.exe" "$OUTPUT_DIR/" 2>/dev/null || true
+    cp "/c/Program Files/gnupg/bin/gpgconf.exe" "$OUTPUT_DIR/" 2>/dev/null || true
 fi
-
-# Copy executable
-echo ""
-echo "[5/6] Copying executable..."
-cp -f "PCPrincipalPGP.exe" "${DIST_DIR}/"
-
-# Deploy Qt
-echo ""
-echo "[6/6] Deploying dependencies..."
-windeployqt "${DIST_DIR}/PCPrincipalPGP.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw 2>/dev/null || true
-
-# Copy required DLLs
-echo "Copying libraries..."
-cp -f "${MINGW_PREFIX}/bin/libgpgme-11.dll" "${DIST_DIR}/" 2>/dev/null || true
-cp -f "${MINGW_PREFIX}/bin/libassuan-0.dll" "${DIST_DIR}/" 2>/dev/null || true
-cp -f "${MINGW_PREFIX}/bin/libgpg-error-0.dll" "${DIST_DIR}/" 2>/dev/null || true
-cp -f "${MINGW_PREFIX}/bin/libsodium-23.dll" "${DIST_DIR}/" 2>/dev/null || true
-cp -f "${MINGW_PREFIX}/bin/libgcrypt-20.dll" "${DIST_DIR}/" 2>/dev/null || true
-cp -f "${MINGW_PREFIX}/bin/libntlm-0.dll" "${DIST_DIR}/" 2>/dev/null || true
-cp -f "${MINGW_PREFIX}/bin/gpg.exe" "${DIST_DIR}/" 2>/dev/null || true
-cp -f "${MINGW_PREFIX}/bin/gpgconf.exe" "${DIST_DIR}/" 2>/dev/null || true
-
-# Copy icon
-cp -f "${SCRIPT_DIR}/resources/icon.png" "${DIST_DIR}/" 2>/dev/null || true
-
-# Create directories
-mkdir -p "${DIST_DIR}/keys/public"
-mkdir -p "${DIST_DIR}/keys/private"
-mkdir -p "${DIST_DIR}/profiles"
-mkdir -p "${DIST_DIR}/gpg"
-mkdir -p "${DIST_DIR}/temp"
-
-cd "${SCRIPT_DIR}"
 
 echo ""
 echo "========================================"
-echo -e "${GREEN}  BUILD SUCCESSFUL!${NC}"
+echo "  BUILD SUCCESSFUL!"
 echo "========================================"
 echo ""
 echo "Your portable PGP application is ready at:"
-echo "  ${DIST_DIR}"
+echo "  $OUTPUT_DIR"
 echo ""
 echo "To use:"
 echo "1. Copy 'PCPrincipalPGP_Portable' to USB or keep it here"
@@ -149,10 +140,3 @@ echo "- Manage contact profiles"
 echo "- Post-quantum encryption support"
 echo "- 100% portable - no installation needed"
 echo ""
-
-# Open the output folder in Windows Explorer
-if command -v explorer &>/dev/null; then
-    explorer "${DIST_DIR}" 2>/dev/null || true
-fi
-
-read -p "Press Enter to continue..."

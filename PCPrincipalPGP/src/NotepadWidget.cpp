@@ -17,10 +17,11 @@
 #include <QDialogButtonBox>
 #include <QPlainTextEdit>
 #include <QPainter>
+#include <QTextBlock>
 
 namespace PCPGP {
 
-// CodeEditor implementation
+// CodeEditor implementation - now inherits from QPlainTextEdit for proper line number support
 class LineNumberArea : public QWidget {
 public:
     LineNumberArea(CodeEditor* editor) : QWidget(editor), m_codeEditor(editor) {}
@@ -38,29 +39,28 @@ private:
     CodeEditor* m_codeEditor;
 };
 
-CodeEditor::CodeEditor(QWidget* parent) : QTextEdit(parent) {
-    setLineWrapMode(QTextEdit::NoWrap);
-    setAcceptRichText(false);
+CodeEditor::CodeEditor(QWidget* parent) : QPlainTextEdit(parent) {
+    setLineWrapMode(QPlainTextEdit::NoWrap);
     setFont(QFont("Consolas", 10));
     
     m_lineNumberArea = new LineNumberArea(this);
     
     updateLineNumberAreaWidth();
-}
-
-void CodeEditor::paintEvent(QPaintEvent* event) {
-    QTextEdit::paintEvent(event);
+    
+    // Connect signals for line number updates
+    connect(this, &QPlainTextEdit::blockCountChanged, this, &CodeEditor::updateLineNumberAreaWidth);
+    connect(this, &QPlainTextEdit::updateRequest, this, &CodeEditor::updateLineNumberArea);
 }
 
 void CodeEditor::resizeEvent(QResizeEvent* event) {
-    QTextEdit::resizeEvent(event);
+    QPlainTextEdit::resizeEvent(event);
     
     QRect cr = contentsRect();
     m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
 }
 
 void CodeEditor::updateLineNumberAreaWidth() {
-    setViewportMargins(30, 0, 0, 0);
+    setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
 }
 
 void CodeEditor::updateLineNumberArea(const QRect& rect, int dy) {
@@ -75,7 +75,7 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* event) {
     QPainter painter(m_lineNumberArea);
     painter.fillRect(event->rect(), QColor(30, 30, 40));
     
-    QTextBlock block = document()->firstBlock();
+    QTextBlock block = firstVisibleBlock();
     int blockNumber = block.blockNumber();
     int top = static_cast<int>(blockBoundingGeometry(block).translated(contentOffset()).top());
     int bottom = top + static_cast<int>(blockBoundingRect(block).height());
@@ -97,7 +97,7 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* event) {
 
 int CodeEditor::lineNumberAreaWidth() {
     int digits = 1;
-    int max = qMax(1, document()->blockCount());
+    int max = qMax(1, blockCount());
     while (max >= 10) {
         max /= 10;
         digits++;
@@ -210,7 +210,7 @@ void NotepadWidget::setupToolbar() {
 }
 
 void NotepadWidget::setupConnections() {
-    connect(m_textEdit, &QTextEdit::textChanged, this, &NotepadWidget::onTextModified);
+    connect(m_textEdit, &QPlainTextEdit::textChanged, this, &NotepadWidget::onTextModified);
     
     connect(m_encryptBtn, &QPushButton::clicked, this, &NotepadWidget::onEncryptClicked);
     connect(m_decryptBtn, &QPushButton::clicked, this, &NotepadWidget::onDecryptClicked);
@@ -234,7 +234,7 @@ void NotepadWidget::setText(const QString& text) {
 }
 
 void NotepadWidget::appendText(const QString& text) {
-    m_textEdit->append(text);
+    m_textEdit->appendPlainText(text);
 }
 
 void NotepadWidget::clearText() {
@@ -467,7 +467,7 @@ void NotepadWidget::onClearSignClicked() {
     clearSign(signer);
 }
 
-void NotepadWidget::onProfileChanged(int index) {
+void NotepadWidget::onProfileChanged(int /*index*/) {
     // Update UI based on selected profile
 }
 
@@ -540,7 +540,7 @@ void NotepadWidget::onResetZoom() {
 }
 
 void NotepadWidget::onWordWrap(bool wrap) {
-    m_textEdit->setLineWrapMode(wrap ? QTextEdit::WidgetWidth : QTextEdit::NoWrap);
+    m_textEdit->setLineWrapMode(wrap ? QPlainTextEdit::WidgetWidth : QPlainTextEdit::NoWrap);
 }
 
 void NotepadWidget::updateProfileList() {

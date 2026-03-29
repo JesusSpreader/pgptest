@@ -243,7 +243,7 @@ QList<QString> SecureStorage::listProfiles() {
     return profiles;
 }
 
-bool SecureStorage::saveToFile(const QString& filePath) {
+bool SecureStorage::saveToFile(const QString& /*filePath*/) {
     return saveStorage();
 }
 
@@ -405,7 +405,8 @@ bool SecureStorage::saveStorage() {
     
     QByteArray output;
     
-    if (m_encryptAll || m_passwordProtected) {
+    // Encrypt if m_encryptAll is true or if we have a password set
+    if (m_encryptAll || !m_password.isEmpty()) {
         output = m_crypto.encrypt(data, m_password);
     } else {
         output = data;

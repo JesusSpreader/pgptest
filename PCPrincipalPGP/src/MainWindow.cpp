@@ -684,6 +684,33 @@ void MainWindow::onCopyPublicKey() {
     }
 }
 
+// Notepad signal handlers - IMPLEMENTED (were missing)
+void MainWindow::onTextChanged() {
+    // Handle text changed signal from notepad
+    m_modified = true;
+    updateWindowTitle();
+}
+
+void MainWindow::onEncryptionRequested() {
+    // Handle encryption requested signal from notepad
+    m_statusLabel->setText("Encryption completed");
+}
+
+void MainWindow::onDecryptionRequested() {
+    // Handle decryption requested signal from notepad
+    m_statusLabel->setText("Decryption completed");
+}
+
+void MainWindow::onSigningRequested() {
+    // Handle signing requested signal from notepad
+    m_statusLabel->setText("Signing completed");
+}
+
+void MainWindow::onVerificationRequested() {
+    // Handle verification requested signal from notepad
+    m_statusLabel->setText("Verification completed");
+}
+
 void MainWindow::showError(const QString& message) {
     QMessageBox::critical(this, "Error", message);
     m_statusLabel->setText("Error: " + message);

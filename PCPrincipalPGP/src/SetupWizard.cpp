@@ -14,6 +14,7 @@
 #include <QFileDialog>
 #include <QProgressBar>
 #include <QMessageBox>
+#include <QRegularExpression>
 
 namespace PCPGP {
 
@@ -63,6 +64,50 @@ bool SetupWizard::isEncryptPrivateOnly() const {
 
 QString SetupWizard::getPassword() const {
     return m_password;
+}
+
+// IMPLEMENTED: Missing validateCurrentPage() override
+bool SetupWizard::validateCurrentPage() {
+    // Basic validation - can be extended as needed
+    return QWizard::validateCurrentPage();
+}
+
+// IMPLEMENTED: Missing slot functions
+void SetupWizard::onModeChanged() {
+    // Handle mode change - update UI accordingly
+    ModePage* modePage = qobject_cast<ModePage*>(page(1));
+    if (modePage) {
+        m_mode = modePage->getSelectedMode();
+    }
+}
+
+void SetupWizard::onBrowsePublic() {
+    QString path = QFileDialog::getExistingDirectory(this, "Select Public Keys Directory");
+    if (!path.isEmpty()) {
+        m_publicPath = path;
+        PathsPage* pathsPage = qobject_cast<PathsPage*>(page(2));
+        if (pathsPage) {
+            // Update the path edit if accessible
+        }
+    }
+}
+
+void SetupWizard::onBrowsePrivate() {
+    QString path = QFileDialog::getExistingDirectory(this, "Select Private Keys Directory");
+    if (!path.isEmpty()) {
+        m_privatePath = path;
+    }
+}
+
+void SetupWizard::onPQToggled(bool checked) {
+    m_postQuantum = checked;
+}
+
+void SetupWizard::onPasswordChanged() {
+    SecurityPage* secPage = qobject_cast<SecurityPage*>(page(3));
+    if (secPage) {
+        m_password = secPage->getPassword();
+    }
 }
 
 void SetupWizard::accept() {

@@ -135,6 +135,8 @@ void MassImportDialog::setupConnections() {
     connect(m_selectAllBtn, &QPushButton::clicked, this, &MassImportDialog::onSelectAll);
     connect(m_deselectAllBtn, &QPushButton::clicked, this, &MassImportDialog::onDeselectAll);
     connect(m_validateBtn, &QPushButton::clicked, this, &MassImportDialog::onValidatePairs);
+    // Added missing connection for item selection changed
+    connect(m_fileList, &QListWidget::itemSelectionChanged, this, &MassImportDialog::onItemSelectionChanged);
 }
 
 void MassImportDialog::setPublicKeysDir(const QString& path) {
@@ -221,6 +223,12 @@ void MassImportDialog::onSelectAll() {
 
 void MassImportDialog::onDeselectAll() {
     m_fileList->clearSelection();
+}
+
+// IMPLEMENTED: Missing onItemSelectionChanged() slot
+void MassImportDialog::onItemSelectionChanged() {
+    int selectedCount = m_fileList->selectedItems().count();
+    m_statusLabel->setText(QString("%1 items selected").arg(selectedCount));
 }
 
 void MassImportDialog::onValidatePairs() {

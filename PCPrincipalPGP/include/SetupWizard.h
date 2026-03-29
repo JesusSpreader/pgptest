@@ -35,6 +35,10 @@ public:
     bool isEncryptPrivateOnly() const;
     QString getPassword() const;
 
+protected:
+    bool validateCurrentPage() override;
+    void accept() override;
+
 private slots:
     void onModeChanged();
     void onBrowsePublic();
@@ -49,9 +53,6 @@ private:
     void createPathsPage();
     void createSecurityPage();
     void createSummaryPage();
-    
-    bool validateCurrentPage() override;
-    void accept() override;
     
     // Page widgets
     QRadioButton* m_dirModeRadio;
@@ -70,12 +71,12 @@ private:
     QLabel* m_summaryLabel;
     
     // Settings
-    PortableMode m_mode;
+    PortableMode m_mode = PortableMode::DIRECTORY_MODE;
     QString m_publicPath;
     QString m_privatePath;
-    bool m_postQuantum;
-    bool m_encryptPrivate;
-    bool m_encryptAll;
+    bool m_postQuantum = true;
+    bool m_encryptPrivate = true;
+    bool m_encryptAll = false;
     QString m_password;
 };
 
