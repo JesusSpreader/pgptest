@@ -1,0 +1,9 @@
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/PCPrincipalPGP.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/edit_cache.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/rebuild_cache.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/list_install_components.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/install.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/install/local.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/install/strip.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/PCPrincipalPGP_autogen_timestamp_deps.dir
+C:/Users/cjdal/Desktop/pgp/pgpmainappp/PCPrincipalPGP/build/CMakeFiles/PCPrincipalPGP_autogen.dir
