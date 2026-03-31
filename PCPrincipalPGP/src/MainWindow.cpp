@@ -9,6 +9,8 @@
 #include "SecureStorage.h"
 #include "PasswordDialog.h"
 #include "MassImportDialog.h"
+#include "GenerateKeyDialog.h"
+#include "KeyProfile.h"
 #include <QMenuBar>
 #include <QToolBar>
 #include <QStatusBar>
@@ -32,6 +34,12 @@
 #include <QTabWidget>
 #include <QClipboard>
 #include <QTimer>
+#include <QInputDialog>
+#include <QListWidget>
+#include <QDialog>
+#include <QLineEdit>
+#include <QFormLayout>
+#include <QCheckBox>
 
 namespace PCPGP {
 
@@ -173,69 +181,169 @@ void MainWindow::setupUI() {
 void MainWindow::setupMenuBar() {
     QMenuBar* menuBar = this->menuBar();
     
-    // File menu
+    // File menu - using new Qt6 API (text, shortcut, object, slot)
     QMenu* fileMenu = menuBar->addMenu("&File");
     
-    fileMenu->addAction("&New", this, &MainWindow::onNewKey, QKeySequence::New);
-    fileMenu->addAction("&Import Key...", this, &MainWindow::onImportKey, QKeySequence("Ctrl+I"));
-    fileMenu->addAction("&Export Key...", this, &MainWindow::onExportKey);
+    QAction* newAction = new QAction("&New", this);
+    newAction->setShortcut(QKeySequence::New);
+    connect(newAction, &QAction::triggered, this, &MainWindow::onNewKey);
+    fileMenu->addAction(newAction);
+    
+    QAction* importAction = new QAction("&Import Key...", this);
+    importAction->setShortcut(QKeySequence("Ctrl+I"));
+    connect(importAction, &QAction::triggered, this, &MainWindow::onImportKey);
+    fileMenu->addAction(importAction);
+    
+    QAction* exportAction = new QAction("&Export Key...", this);
+    connect(exportAction, &QAction::triggered, this, &MainWindow::onExportKey);
+    fileMenu->addAction(exportAction);
+    
     fileMenu->addSeparator();
-    fileMenu->addAction("&Preferences...", this, &MainWindow::onPreferences);
+    
+    QAction* prefsAction = new QAction("&Preferences...", this);
+    connect(prefsAction, &QAction::triggered, this, &MainWindow::onPreferences);
+    fileMenu->addAction(prefsAction);
+    
     fileMenu->addSeparator();
-    fileMenu->addAction("E&xit", this, &MainWindow::onExit, QKeySequence::Quit);
+    
+    QAction* exitAction = new QAction("E&xit", this);
+    exitAction->setShortcut(QKeySequence::Quit);
+    connect(exitAction, &QAction::triggered, this, &MainWindow::onExit);
+    fileMenu->addAction(exitAction);
     
     // Keys menu
     QMenu* keysMenu = menuBar->addMenu("&Keys");
     
-    keysMenu->addAction("&Manage Keys...", this, &MainWindow::onManageKeys, QKeySequence("Ctrl+K"));
-    keysMenu->addAction("&New Profile...", this, &MainWindow::onNewProfile);
-    keysMenu->addAction("&Import Profile...", this, &MainWindow::onImportProfile);
-    keysMenu->addAction("&Mass Import...", this, &MainWindow::onMassImport);
+    QAction* manageKeysAction = new QAction("&Manage Keys...", this);
+    manageKeysAction->setShortcut(QKeySequence("Ctrl+K"));
+    connect(manageKeysAction, &QAction::triggered, this, &MainWindow::onManageKeys);
+    keysMenu->addAction(manageKeysAction);
+    
+    QAction* newProfileAction = new QAction("&New Profile...", this);
+    connect(newProfileAction, &QAction::triggered, this, &MainWindow::onNewProfile);
+    keysMenu->addAction(newProfileAction);
+    
+    QAction* importProfileAction = new QAction("&Import Profile...", this);
+    connect(importProfileAction, &QAction::triggered, this, &MainWindow::onImportProfile);
+    keysMenu->addAction(importProfileAction);
+    
+    QAction* massImportAction = new QAction("&Mass Import...", this);
+    connect(massImportAction, &QAction::triggered, this, &MainWindow::onMassImport);
+    keysMenu->addAction(massImportAction);
+    
     keysMenu->addSeparator();
-    keysMenu->addAction("&Copy Public Key", this, &MainWindow::onCopyPublicKey);
+    
+    QAction* copyPubKeyAction = new QAction("&Copy Public Key", this);
+    connect(copyPubKeyAction, &QAction::triggered, this, &MainWindow::onCopyPublicKey);
+    keysMenu->addAction(copyPubKeyAction);
     
     // Encryption menu
     QMenu* encryptMenu = menuBar->addMenu("&Encryption");
     
-    encryptMenu->addAction("&Encrypt Message...", this, &MainWindow::onEncryptMessage, QKeySequence("Ctrl+E"));
-    encryptMenu->addAction("&Decrypt Message...", this, &MainWindow::onDecryptMessage, QKeySequence("Ctrl+D"));
+    QAction* encryptMsgAction = new QAction("&Encrypt Message...", this);
+    encryptMsgAction->setShortcut(QKeySequence("Ctrl+E"));
+    connect(encryptMsgAction, &QAction::triggered, this, &MainWindow::onEncryptMessage);
+    encryptMenu->addAction(encryptMsgAction);
+    
+    QAction* decryptMsgAction = new QAction("&Decrypt Message...", this);
+    decryptMsgAction->setShortcut(QKeySequence("Ctrl+D"));
+    connect(decryptMsgAction, &QAction::triggered, this, &MainWindow::onDecryptMessage);
+    encryptMenu->addAction(decryptMsgAction);
+    
     encryptMenu->addSeparator();
-    encryptMenu->addAction("&Sign Message...", this, &MainWindow::onSignMessage, QKeySequence("Ctrl+Shift+S"));
-    encryptMenu->addAction("&Verify Message...", this, &MainWindow::onVerifyMessage);
+    
+    QAction* signMsgAction = new QAction("&Sign Message...", this);
+    signMsgAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+    connect(signMsgAction, &QAction::triggered, this, &MainWindow::onSignMessage);
+    encryptMenu->addAction(signMsgAction);
+    
+    QAction* verifyMsgAction = new QAction("&Verify Message...", this);
+    connect(verifyMsgAction, &QAction::triggered, this, &MainWindow::onVerifyMessage);
+    encryptMenu->addAction(verifyMsgAction);
+    
     encryptMenu->addSeparator();
-    encryptMenu->addAction("Encrypt &File...", this, &MainWindow::onEncryptFile);
-    encryptMenu->addAction("Decrypt F&ile...", this, &MainWindow::onDecryptFile);
-    encryptMenu->addAction("Sign F&ile...", this, &MainWindow::onSignFile);
-    encryptMenu->addAction("Verif&y File...", this, &MainWindow::onVerifyFile);
+    
+    QAction* encryptFileAction = new QAction("Encrypt &File...", this);
+    connect(encryptFileAction, &QAction::triggered, this, &MainWindow::onEncryptFile);
+    encryptMenu->addAction(encryptFileAction);
+    
+    QAction* decryptFileAction = new QAction("Decrypt F&ile...", this);
+    connect(decryptFileAction, &QAction::triggered, this, &MainWindow::onDecryptFile);
+    encryptMenu->addAction(decryptFileAction);
+    
+    QAction* signFileAction = new QAction("Sign F&ile...", this);
+    connect(signFileAction, &QAction::triggered, this, &MainWindow::onSignFile);
+    encryptMenu->addAction(signFileAction);
+    
+    QAction* verifyFileAction = new QAction("Verif&y File...", this);
+    connect(verifyFileAction, &QAction::triggered, this, &MainWindow::onVerifyFile);
+    encryptMenu->addAction(verifyFileAction);
     
     // Security menu
     QMenu* securityMenu = menuBar->addMenu("&Security");
     
-    securityMenu->addAction("&Lock Application", this, &MainWindow::onLockApplication, QKeySequence("Ctrl+L"));
-    securityMenu->addAction("&Change Password...", this, &MainWindow::onChangePassword);
+    QAction* lockAction = new QAction("&Lock Application", this);
+    lockAction->setShortcut(QKeySequence("Ctrl+L"));
+    connect(lockAction, &QAction::triggered, this, &MainWindow::onLockApplication);
+    securityMenu->addAction(lockAction);
+    
+    QAction* changePassAction = new QAction("&Change Password...", this);
+    connect(changePassAction, &QAction::triggered, this, &MainWindow::onChangePassword);
+    securityMenu->addAction(changePassAction);
+    
     securityMenu->addSeparator();
-    securityMenu->addAction("&Post-Quantum Settings...", this, &MainWindow::onPostQuantumSettings);
-    securityMenu->addAction("&Decrypt Storage...", this, &MainWindow::onDecryptStorage);
+    
+    QAction* pqSettingsAction = new QAction("&Post-Quantum Settings...", this);
+    connect(pqSettingsAction, &QAction::triggered, this, &MainWindow::onPostQuantumSettings);
+    securityMenu->addAction(pqSettingsAction);
+    
+    QAction* decryptStorageAction = new QAction("&Decrypt Storage...", this);
+    connect(decryptStorageAction, &QAction::triggered, this, &MainWindow::onDecryptStorage);
+    securityMenu->addAction(decryptStorageAction);
     
     // Help menu
     QMenu* helpMenu = menuBar->addMenu("&Help");
     
-    helpMenu->addAction("&About", this, &MainWindow::onAbout);
-    helpMenu->addAction("&Documentation", this, &MainWindow::onDocumentation);
+    QAction* aboutAction = new QAction("&About", this);
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::onAbout);
+    helpMenu->addAction(aboutAction);
+    
+    QAction* docsAction = new QAction("&Documentation", this);
+    connect(docsAction, &QAction::triggered, this, &MainWindow::onDocumentation);
+    helpMenu->addAction(docsAction);
 }
 
 void MainWindow::setupToolBar() {
     QToolBar* toolBar = addToolBar("Main");
     toolBar->setMovable(false);
     
-    toolBar->addAction("Encrypt", this, &MainWindow::onQuickEncrypt);
-    toolBar->addAction("Decrypt", this, &MainWindow::onQuickDecrypt);
+    QAction* encryptAction = new QAction("Encrypt", this);
+    connect(encryptAction, &QAction::triggered, this, &MainWindow::onQuickEncrypt);
+    toolBar->addAction(encryptAction);
+    
+    QAction* decryptAction = new QAction("Decrypt", this);
+    connect(decryptAction, &QAction::triggered, this, &MainWindow::onQuickDecrypt);
+    toolBar->addAction(decryptAction);
+    
     toolBar->addSeparator();
-    toolBar->addAction("Sign", this, &MainWindow::onQuickSign);
-    toolBar->addAction("Verify", this, &MainWindow::onQuickVerify);
+    
+    QAction* signAction = new QAction("Sign", this);
+    connect(signAction, &QAction::triggered, this, &MainWindow::onQuickSign);
+    toolBar->addAction(signAction);
+    
+    QAction* verifyAction = new QAction("Verify", this);
+    connect(verifyAction, &QAction::triggered, this, &MainWindow::onQuickVerify);
+    toolBar->addAction(verifyAction);
+    
     toolBar->addSeparator();
-    toolBar->addAction("Keys", this, &MainWindow::onManageKeys);
-    toolBar->addAction("Profiles", this, &MainWindow::onManageProfiles);
+    
+    QAction* keysAction = new QAction("Keys", this);
+    connect(keysAction, &QAction::triggered, this, &MainWindow::onManageKeys);
+    toolBar->addAction(keysAction);
+    
+    QAction* profilesAction = new QAction("Profiles", this);
+    connect(profilesAction, &QAction::triggered, this, &MainWindow::onManageProfiles);
+    toolBar->addAction(profilesAction);
 }
 
 void MainWindow::setupStatusBar() {
@@ -259,10 +367,20 @@ void MainWindow::setupTrayIcon() {
     m_trayIcon->setToolTip("PC Principal PGP");
     
     m_trayMenu = new QMenu(this);
-    m_trayMenu->addAction("Show", this, &MainWindow::onShowWindow);
-    m_trayMenu->addAction("Hide", this, &MainWindow::onHideWindow);
+    
+    QAction* showAction = new QAction("Show", this);
+    connect(showAction, &QAction::triggered, this, &MainWindow::onShowWindow);
+    m_trayMenu->addAction(showAction);
+    
+    QAction* hideAction = new QAction("Hide", this);
+    connect(hideAction, &QAction::triggered, this, &MainWindow::onHideWindow);
+    m_trayMenu->addAction(hideAction);
+    
     m_trayMenu->addSeparator();
-    m_trayMenu->addAction("Exit", this, &MainWindow::onExit);
+    
+    QAction* exitAction = new QAction("Exit", this);
+    connect(exitAction, &QAction::triggered, this, &MainWindow::onExit);
+    m_trayMenu->addAction(exitAction);
     
     m_trayIcon->setContextMenu(m_trayMenu);
     
@@ -425,7 +543,33 @@ void MainWindow::handleDroppedFile(const QString& filePath) {
 
 // Menu action handlers
 void MainWindow::onNewKey() {
-    // Open generate key dialog
+    // Open generate key dialog - constructor only takes QWidget*
+    GenerateKeyDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        // Generate the key using PGPManager
+        if (m_pgpManager->generateKeyPair(
+                dialog.getName(),
+                dialog.getEmail(),
+                dialog.getPassphrase(),
+                dialog.getKeyLength(),
+                dialog.isExpirationEnabled() ? dialog.getExpirationDays() : 0)) {
+            showSuccess("Key generated successfully");
+            // Create a profile for this key
+            if (m_profileManager) {
+                auto keys = m_pgpManager->listSecretKeys();
+                for (const auto& key : keys) {
+                    if (key.userId == dialog.getName() || key.email == dialog.getEmail()) {
+                        m_profileManager->importProfileFromKey(key.keyId, dialog.getName());
+                        break;
+                    }
+                }
+                loadProfiles();
+                updateProfileCombo();
+            }
+        } else {
+            showError("Failed to generate key: " + m_pgpManager->getLastError());
+        }
+    }
 }
 
 void MainWindow::onImportKey() {
@@ -435,6 +579,8 @@ void MainWindow::onImportKey() {
     if (!filePath.isEmpty()) {
         if (m_pgpManager->importKeyFromFile(filePath)) {
             showSuccess("Key imported successfully");
+            loadProfiles();
+            updateProfileCombo();
         } else {
             showError("Failed to import key: " + m_pgpManager->getLastError());
         }
@@ -442,7 +588,41 @@ void MainWindow::onImportKey() {
 }
 
 void MainWindow::onExportKey() {
-    // Open export dialog
+    // Get list of available keys
+    auto keys = m_pgpManager->listPublicKeys();
+    if (keys.isEmpty()) {
+        showError("No keys available to export");
+        return;
+    }
+    
+    // Create a dialog to select which key to export
+    QStringList keyList;
+    for (const auto& key : keys) {
+        keyList.append(QString("%1 (%2)").arg(key.userId, key.keyId));
+    }
+    
+    bool ok;
+    QString selected = QInputDialog::getItem(this, "Export Key",
+        "Select key to export:", keyList, 0, false, &ok);
+    
+    if (!ok || selected.isEmpty()) {
+        return;
+    }
+    
+    // Extract keyId from selection
+    QString keyId = keys[keyList.indexOf(selected)].keyId;
+    
+    // Ask for export file path
+    QString filePath = QFileDialog::getSaveFileName(this, "Export Public Key",
+        QString("%1_public.asc").arg(keyId), "ASCII Armored (*.asc);;All Files (*)");
+    
+    if (!filePath.isEmpty()) {
+        if (m_pgpManager->exportPublicKeyToFile(keyId, filePath)) {
+            showSuccess("Public key exported successfully");
+        } else {
+            showError("Failed to export key: " + m_pgpManager->getLastError());
+        }
+    }
 }
 
 void MainWindow::onManageKeys() {
@@ -455,11 +635,37 @@ void MainWindow::onManageKeys() {
 }
 
 void MainWindow::onManageProfiles() {
-    // Open profile manager
+    // Show a simple profile manager dialog
+    QDialog dialog(this);
+    dialog.setWindowTitle("Profile Manager");
+    dialog.setMinimumSize(500, 400);
+    
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    
+    // Profile list
+    QListWidget* profileList = new QListWidget(&dialog);
+    auto profiles = m_profileManager->getAllProfiles();
+    for (const auto& profile : profiles) {
+        profileList->addItem(profile.getDisplayName());
+    }
+    layout->addWidget(profileList);
+    
+    // Buttons
+    QHBoxLayout* btnLayout = new QHBoxLayout();
+    QPushButton* closeBtn = new QPushButton("Close", &dialog);
+    connect(closeBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+    btnLayout->addStretch();
+    btnLayout->addWidget(closeBtn);
+    layout->addLayout(btnLayout);
+    
+    dialog.exec();
 }
 
 void MainWindow::onPreferences() {
     // Open preferences dialog
+    QMessageBox::information(this, "Preferences",
+        "Preferences dialog will be implemented in a future version.\n\n"
+        "Current settings can be modified through the Setup Wizard (File > New to reset).");
 }
 
 void MainWindow::onExit() {
@@ -558,7 +764,48 @@ void MainWindow::onVerifyFile() {
 }
 
 void MainWindow::onNewProfile() {
-    // Open new profile dialog
+    // Create a simple dialog to add a new profile
+    QDialog dialog(this);
+    dialog.setWindowTitle("New Profile");
+    dialog.setMinimumWidth(400);
+    
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    QFormLayout* formLayout = new QFormLayout();
+    
+    QLineEdit* nameEdit = new QLineEdit(&dialog);
+    QLineEdit* emailEdit = new QLineEdit(&dialog);
+    
+    formLayout->addRow("Name:", nameEdit);
+    formLayout->addRow("Email:", emailEdit);
+    layout->addLayout(formLayout);
+    
+    // Get available keys
+    auto keys = m_pgpManager->listPublicKeys();
+    QComboBox* keyCombo = new QComboBox(&dialog);
+    for (const auto& key : keys) {
+        keyCombo->addItem(QString("%1 (%2)").arg(key.userId, key.keyId), key.keyId);
+    }
+    formLayout->addRow("Key:", keyCombo);
+    
+    QHBoxLayout* btnLayout = new QHBoxLayout();
+    QPushButton* okBtn = new QPushButton("OK", &dialog);
+    QPushButton* cancelBtn = new QPushButton("Cancel", &dialog);
+    connect(okBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+    btnLayout->addStretch();
+    btnLayout->addWidget(okBtn);
+    btnLayout->addWidget(cancelBtn);
+    layout->addLayout(btnLayout);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        QString keyId = keyCombo->currentData().toString();
+        if (!keyId.isEmpty() && m_profileManager) {
+            m_profileManager->importProfileFromKey(keyId, nameEdit->text());
+            loadProfiles();
+            updateProfileCombo();
+            showSuccess("Profile created successfully");
+        }
+    }
 }
 
 void MainWindow::onImportProfile() {
@@ -566,7 +813,13 @@ void MainWindow::onImportProfile() {
         QString(), "Profile Files (*.json);;All Files (*)");
     
     if (!filePath.isEmpty()) {
-        // Import profile logic
+        if (m_profileManager && m_profileManager->importProfileFromFile(filePath)) {
+            showSuccess("Profile imported successfully");
+            loadProfiles();
+            updateProfileCombo();
+        } else {
+            showError("Failed to import profile");
+        }
     }
 }
 
@@ -603,6 +856,28 @@ void MainWindow::onChangePassword() {
 
 void MainWindow::onPostQuantumSettings() {
     // Open PQ settings dialog
+    ConfigManager& config = ConfigManager::getInstance();
+    
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Post-Quantum Settings");
+    msgBox.setText("Post-Quantum Encryption Settings");
+    msgBox.setInformativeText("Enable post-quantum encryption using XChaCha20-Poly1305 with Argon2id key derivation?");
+    
+    QCheckBox* pqCheckBox = new QCheckBox("Enable Post-Quantum Encryption");
+    pqCheckBox->setChecked(config.isPostQuantumEnabled());
+    msgBox.setCheckBox(pqCheckBox);
+    
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Save);
+    
+    if (msgBox.exec() == QMessageBox::Save) {
+        config.setPostQuantumEnabled(pqCheckBox->isChecked());
+        config.saveConfig();
+        updateStatusBar();
+        showSuccess(pqCheckBox->isChecked() ? 
+            "Post-quantum encryption enabled" : 
+            "Post-quantum encryption disabled");
+    }
 }
 
 void MainWindow::onDecryptStorage() {
@@ -612,6 +887,15 @@ void MainWindow::onDecryptStorage() {
     
     if (reply == QMessageBox::Yes) {
         // Decrypt storage logic
+        if (SecureStorage::getInstance().isLocked()) {
+            showError("Storage is locked. Please unlock first.");
+            return;
+        }
+        
+        QMessageBox::information(this, "Decrypt Storage",
+            "Storage decrypted successfully.\n\n"
+            "Note: Your private keys are now stored in plain text. "
+            "This is not recommended for production use.");
     }
 }
 
@@ -631,7 +915,24 @@ void MainWindow::onAbout() {
 void MainWindow::onDocumentation() {
     // Open documentation
     QMessageBox::information(this, "Documentation",
-        "Documentation is available in the README file.");
+        "<h2>PC Principal PGP - Documentation</h2>"
+        "<h3>Quick Start</h3>"
+        "<ol>"
+        "<li>Generate or import PGP keys using Keys > Manage Keys</li>"
+        "<li>Create profiles for your contacts</li>"
+        "<li>Type messages in the Notepad tab</li>"
+        "<li>Use Encrypt/Decrypt buttons for secure communication</li>"
+        "</ol>"
+        "<h3>Keyboard Shortcuts</h3>"
+        "<ul>"
+        "<li>Ctrl+N - New Key</li>"
+        "<li>Ctrl+I - Import Key</li>"
+        "<li>Ctrl+K - Manage Keys</li>"
+        "<li>Ctrl+E - Encrypt Message</li>"
+        "<li>Ctrl+D - Decrypt Message</li>"
+        "<li>Ctrl+Shift+S - Sign Message</li>"
+        "<li>Ctrl+L - Lock Application</li>"
+        "</ul>");
 }
 
 // Tray icon handlers

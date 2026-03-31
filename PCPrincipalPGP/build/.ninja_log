@@ -1,0 +1,27 @@
+# ninja log v7
+7	1272	7966420444210974	PCPrincipalPGP_autogen/timestamp	b2377af395dcfe97
+7	1272	7966420444210974	PCPrincipalPGP_autogen/mocs_compilation.cpp	b2377af395dcfe97
+7	1272	7966420444210974	C:/Users/cjdal/Desktop/pgp/pgpmainappp/pgptest/PCPrincipalPGP/build/PCPrincipalPGP_autogen/timestamp	b2377af395dcfe97
+7	1272	7966420444210974	C:/Users/cjdal/Desktop/pgp/pgpmainappp/pgptest/PCPrincipalPGP/build/PCPrincipalPGP_autogen/mocs_compilation.cpp	b2377af395dcfe97
+1278	1341	7966420445283199	PCPrincipalPGP_autogen/3YJK5W5UP7/qrc_resources.cpp	f89d58613e1f411f
+1278	1341	7966420445283199	C:/Users/cjdal/Desktop/pgp/pgpmainappp/pgptest/PCPrincipalPGP/build/PCPrincipalPGP_autogen/3YJK5W5UP7/qrc_resources.cpp	f89d58613e1f411f
+1368	5334	7966420445652217	CMakeFiles/PCPrincipalPGP.dir/src/QuantumCrypto.cpp.obj	882f815c6df43ad5
+1374	5714	7966420445702083	CMakeFiles/PCPrincipalPGP.dir/src/KeyProfile.cpp.obj	90532c18dc4ce558
+1401	6477	7966420445981336	CMakeFiles/PCPrincipalPGP.dir/src/PasswordDialog.cpp.obj	662552f9b0c7e45
+1363	6594	7966420445592390	CMakeFiles/PCPrincipalPGP.dir/src/ConfigManager.cpp.obj	8268166378ca3039
+1421	6605	7966420446170830	CMakeFiles/PCPrincipalPGP.dir/src/FileOperations.cpp.obj	f6cf6b51fe013488
+6521	6784	7966420497571015	CMakeFiles/PCPrincipalPGP.dir/PCPrincipalPGP_autogen/3YJK5W5UP7/qrc_resources.cpp.obj	acfdcd0a7899aa1c
+1394	6795	7966420445911527	CMakeFiles/PCPrincipalPGP.dir/src/GenerateKeyDialog.cpp.obj	572c2519697f0ecf
+1357	6798	7966420445532544	CMakeFiles/PCPrincipalPGP.dir/src/SecureStorage.cpp.obj	d581f8a6475d153f
+1408	7241	7966420446041178	CMakeFiles/PCPrincipalPGP.dir/src/EncryptDialog.cpp.obj	286b38235a3c442d
+1427	7715	7966420446230670	CMakeFiles/PCPrincipalPGP.dir/src/SetupWizard.cpp.obj	90f2f96a8d0beaef
+1345	7789	7966420445412860	CMakeFiles/PCPrincipalPGP.dir/src/main.cpp.obj	5de57afce8450d55
+1380	8301	7966420445761925	CMakeFiles/PCPrincipalPGP.dir/src/NotepadWidget.cpp.obj	3bbdd6c1512ab24e
+1386	8414	7966420445821766	CMakeFiles/PCPrincipalPGP.dir/src/KeyManagerDialog.cpp.obj	a6f18c4a67e6e814
+1341	8498	7966420445373014	CMakeFiles/PCPrincipalPGP.dir/PCPrincipalPGP_autogen/mocs_compilation.cpp.obj	1a27b9db1fcedc51
+1414	8860	7966420446110985	CMakeFiles/PCPrincipalPGP.dir/src/ProfileManager.cpp.obj	52b9664780653b0c
+1353	8904	7966420445492664	CMakeFiles/PCPrincipalPGP.dir/src/PGPManager.cpp.obj	250b005ac0223639
+1349	9591	7966420445452744	CMakeFiles/PCPrincipalPGP.dir/src/MainWindow.cpp.obj	46088da658e9db7
+5361	10734	7966420485881431	CMakeFiles/PCPrincipalPGP.dir/src/MassImportDialog.cpp.obj	fd8dd1eca2a33b33
+5741	10805	7966420489641678	CMakeFiles/PCPrincipalPGP.dir/src/ContextMenuHandler.cpp.obj	3750fbd98ba8208f
+10807	11042	7966420540036305	PCPrincipalPGP.exe	2f313ae0740f29c1

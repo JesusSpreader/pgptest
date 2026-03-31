@@ -148,6 +148,7 @@ void KeyManagerDialog::setupConnections() {
     // Context menus
     connect(m_publicTable, &QTableWidget::customContextMenuRequested,
             this, [this](const QPoint& pos) {
+        Q_UNUSED(pos)
         QMenu menu(this);
         menu.addAction("Copy Key ID", this, [this]() {
             auto key = getSelectedKey();
@@ -468,6 +469,8 @@ void KeyManagerDialog::onMassImport() {
 }
 
 void KeyManagerDialog::onTabChanged(int index) {
+    // Fix unused parameter warning by using Q_UNUSED
+    Q_UNUSED(index)
     updateButtonStates();
 }
 

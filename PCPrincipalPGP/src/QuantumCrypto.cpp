@@ -110,17 +110,19 @@ QByteArray QuantumCrypto::encrypt(const QByteArray& data, const QString& passwor
 }
 
 QByteArray QuantumCrypto::decrypt(const QByteArray& data, const QString& password) {
-    if (!s_initialized || data.size() < SALT_SIZE + NONCE_SIZE + sizeof(quint64) + TAG_SIZE) {
+    // Fix sign-compare warning by casting size_t to qsizetype for comparison
+    const qsizetype minSize = static_cast<qsizetype>(SALT_SIZE + NONCE_SIZE + sizeof(quint64) + TAG_SIZE);
+    if (!s_initialized || data.size() < minSize) {
         return QByteArray();
     }
     
     // Extract components
-    int pos = 0;
-    QByteArray salt = data.mid(pos, SALT_SIZE);
-    pos += SALT_SIZE;
+    qsizetype pos = 0;
+    QByteArray salt = data.mid(pos, static_cast<qsizetype>(SALT_SIZE));
+    pos += static_cast<qsizetype>(SALT_SIZE);
     
-    QByteArray nonce = data.mid(pos, NONCE_SIZE);
-    pos += NONCE_SIZE;
+    QByteArray nonce = data.mid(pos, static_cast<qsizetype>(NONCE_SIZE));
+    pos += static_cast<qsizetype>(NONCE_SIZE);
     
     quint64 ciphertextLen;
     memcpy(&ciphertextLen, data.constData() + pos, sizeof(ciphertextLen));
@@ -140,7 +142,7 @@ QByteArray QuantumCrypto::decrypt(const QByteArray& data, const QString& passwor
     }
     
     // Decrypt
-    QByteArray plaintext(ciphertext.size() - TAG_SIZE, 0);
+    QByteArray plaintext(ciphertext.size() - static_cast<qsizetype>(TAG_SIZE), 0);
     unsigned long long plaintextLen;
     
     if (crypto_aead_xchacha20poly1305_ietf_decrypt(
@@ -159,7 +161,7 @@ QByteArray QuantumCrypto::decrypt(const QByteArray& data, const QString& passwor
     }
     
     // Resize to actual plaintext length
-    plaintext.resize(static_cast<int>(plaintextLen));
+    plaintext.resize(static_cast<qsizetype>(plaintextLen));
     
     // Clear sensitive data
     sodium_memzero(key.data(), key.size());

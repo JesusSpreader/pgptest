@@ -14,6 +14,8 @@
 #include "ConfigManager.h"
 #include "SecureStorage.h"
 #include "QuantumCrypto.h"
+#include "SetupWizard.h"
+#include "PasswordDialog.h"
 
 using namespace PCPGP;
 
@@ -359,9 +361,36 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    // Check if first run or setup requested
+    // Check if first run or setup requested - run setup wizard BEFORE creating main window
     bool firstRun = config.isFirstRun() || parser.isSet(setupOption);
-    (void)firstRun; // Suppress unused variable warning
+    if (firstRun) {
+        SetupWizard wizard;
+        if (wizard.exec() == QDialog::Accepted) {
+            // Apply settings from wizard
+            config.setPortableMode(wizard.getPortableMode());
+            if (wizard.getPortableMode() == PortableMode::PARTIAL_PORTABLE) {
+                config.setCustomPublicKeysDir(wizard.getPublicKeysPath());
+                config.setCustomPrivateKeysDir(wizard.getPrivateKeysPath());
+            }
+            config.setPostQuantumEnabled(wizard.isPostQuantumEnabled());
+            config.setEncryptPrivateKeysOnly(wizard.isEncryptPrivateOnly());
+            
+            QString password = wizard.getPassword();
+            if (!password.isEmpty()) {
+                config.setPasswordProtected(true);
+                SecureStorage::getInstance().initialize(password);
+            }
+            
+            config.saveConfig();
+        }
+    } else if (config.isPasswordProtected()) {
+        // Ask for password
+        if (!PasswordDialog::unlock(nullptr)) {
+            QMessageBox::critical(nullptr, "Access Denied", 
+                "Incorrect password. Application will close.");
+            return 1;
+        }
+    }
     
     // Create and show main window
     MainWindow window;
