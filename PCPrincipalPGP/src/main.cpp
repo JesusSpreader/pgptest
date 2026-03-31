@@ -8,6 +8,7 @@
 #include <QCommandLineParser>
 #include <QSharedMemory>
 #include <QSystemSemaphore>
+#include <QIcon>
 
 #include "MainWindow.h"
 #include "ConfigManager.h"
@@ -69,7 +70,7 @@ void setupDarkTheme(QApplication& app) {
             border-radius: 4px;
         }
         QPushButton:hover {
-            background-color: #3d3d4d;
+            background-color: #3d3d3d;
             border-color: #4682b4;
         }
         QPushButton:pressed {
@@ -143,7 +144,7 @@ void setupDarkTheme(QApplication& app) {
             color: #ffffff;
         }
         QTabBar::tab:hover:!selected {
-            background-color: #3d3d4d;
+            background-color: #3d3d3d;
         }
         QGroupBox {
             color: #c8c8d2;
@@ -163,7 +164,7 @@ void setupDarkTheme(QApplication& app) {
             border-radius: 6px;
         }
         QScrollBar::handle:vertical {
-            background-color: #3d3d4d;
+            background-color: #3d3d3d;
             border-radius: 6px;
             min-height: 20px;
         }
@@ -176,7 +177,7 @@ void setupDarkTheme(QApplication& app) {
             border-radius: 6px;
         }
         QScrollBar::handle:horizontal {
-            background-color: #3d3d4d;
+            background-color: #3d3d3d;
             border-radius: 6px;
             min-width: 20px;
         }
@@ -207,7 +208,7 @@ void setupDarkTheme(QApplication& app) {
             padding: 4px;
         }
         QToolButton:hover {
-            background-color: #3d3d4d;
+            background-color: #3d3d3d;
             border-color: #4682b4;
         }
         QStatusBar {
@@ -286,6 +287,9 @@ int main(int argc, char* argv[]) {
     app.setOrganizationName("PCPrincipalPGP");
     app.setApplicationVersion("1.0.0");
     
+    // Set application icon from resources
+    app.setWindowIcon(QIcon(":/icon.png"));
+    
     // Setup dark theme
     setupDarkTheme(app);
     
@@ -357,6 +361,7 @@ int main(int argc, char* argv[]) {
     
     // Check if first run or setup requested
     bool firstRun = config.isFirstRun() || parser.isSet(setupOption);
+    (void)firstRun; // Suppress unused variable warning
     
     // Create and show main window
     MainWindow window;

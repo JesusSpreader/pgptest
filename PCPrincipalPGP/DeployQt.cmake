@@ -1,5 +1,6 @@
 # DeployQt.cmake - Qt deployment for Windows
-# This file handles copying Qt dependencies after build
+# Note: windeployqt is now called from build_internal.sh to avoid double deployment
+# This file is kept for compatibility but deployment is handled by the build script
 
 if(WIN32)
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt
@@ -11,17 +12,8 @@ if(WIN32)
     
     if(WINDEPLOYQT_EXECUTABLE)
         message(STATUS "Found windeployqt: ${WINDEPLOYQT_EXECUTABLE}")
-        
-        add_custom_command(TARGET PCPrincipalPGP POST_BUILD
-            COMMAND ${WINDEPLOYQT_EXECUTABLE}
-                --release
-                --no-translations
-                --no-system-d3d-compiler
-                --no-opengl-sw
-                --no-compiler-runtime
-                $<TARGET_FILE:PCPrincipalPGP>
-            COMMENT "Deploying Qt dependencies..."
-        )
+        # Deployment is handled by build_internal.sh to avoid running twice
+        # and to allow better control over additional DLLs
     else()
         message(WARNING "windeployqt not found - manual deployment required")
     endif()

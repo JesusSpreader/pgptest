@@ -1,5 +1,5 @@
 #!/bin/bash
-# PC Principal PGP - Fixed Build Script with all dependencies
+# PC Principal PGP - Build Script with Maximum Static Linking
 
 set -e
 
@@ -17,8 +17,8 @@ echo "Build:  $BUILD_DIR"
 echo "Output: $OUTPUT_DIR"
 echo ""
 
-# [1/6] Check dependencies
-echo "[1/6] Checking dependencies..."
+# [1/5] Check dependencies
+echo "[1/5] Checking dependencies..."
 command -v cmake >/dev/null 2>&1 || { echo "cmake required but not installed."; exit 1; }
 command -v ninja >/dev/null 2>&1 || { echo "ninja required but not installed."; exit 1; }
 command -v g++ >/dev/null 2>&1 || { echo "g++ required but not installed."; exit 1; }
@@ -26,83 +26,107 @@ pkg-config --exists gpgme || { echo "gpgme not found. Install with: pacman -S mi
 pkg-config --exists libsodium || { echo "libsodium not found. Install with: pacman -S mingw-w64-x86_64-libsodium"; exit 1; }
 echo "All dependencies ready!"
 
-# [2/6] Clean previous build
+# [2/5] Clean previous build
 echo ""
-echo "[2/6] Cleaning previous build..."
+echo "[2/5] Cleaning previous build..."
 rm -rf "$BUILD_DIR"
 rm -rf "$OUTPUT_DIR"
 
-# [3/6] Configure with CMake
+# [3/5] Configure with CMake
 echo ""
-echo "[3/6] Configuring with CMake..."
+echo "[3/5] Configuring with CMake..."
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ "$SCRIPT_DIR"
 
-# [4/6] Building
+# Configure with static linking options
+cmake -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_COMPILER=g++ \
+    -DCMAKE_C_COMPILER=gcc \
+    -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
+    "$SCRIPT_DIR"
+
+# [4/5] Building
 echo ""
-echo "[4/6] Building... (this may take a few minutes)"
+echo "[4/5] Building... (this may take a few minutes)"
 cd "$BUILD_DIR"
 ninja -j$(nproc)
 
-# [5/6] Deploying Qt dependencies
+# [5/5] Deploy Qt dependencies and create portable package
 echo ""
-echo "[5/6] Deploying Qt dependencies..."
-windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime "$BUILD_DIR/PCPrincipalPGP.exe"
+echo "[5/5] Deploying Qt dependencies and creating portable package..."
 
-# [6/6] Copy to portable folder with ALL dependencies
-echo ""
-echo "[6/6] Deploying ALL dependencies..."
+# Create output directory
 mkdir -p "$OUTPUT_DIR"
-cp -r "$BUILD_DIR"/* "$OUTPUT_DIR/"
+
+# Copy the executable
+cp "$BUILD_DIR/PCPrincipalPGP.exe" "$OUTPUT_DIR/"
+
+# Run windeployqt to deploy Qt dependencies
+echo "Running windeployqt..."
+windeployqt --release \
+    --no-translations \
+    --no-system-d3d-compiler \
+    --no-opengl-sw \
+    --no-compiler-runtime \
+    "$OUTPUT_DIR/PCPrincipalPGP.exe"
 
 # Copy additional Qt/MinGW dependencies that windeployqt misses
 echo "Copying additional DLLs..."
 
+# Function to copy DLL with error handling
+copy_dll() {
+    local dll_name="$1"
+    local dest="$2"
+    if [ -f "$MSYS_BIN/$dll_name" ]; then
+        cp "$MSYS_BIN/$dll_name" "$dest/"
+        echo "  Copied: $dll_name"
+    else
+        echo "  WARNING: $dll_name not found"
+    fi
+}
+
 # Core ICU libraries (required by Qt)
-cp "$MSYS_BIN/icuin78.dll" "$OUTPUT_DIR/" 2>/dev/null || \
-cp "$MSYS_BIN/libicuin78.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/icuuc78.dll" "$OUTPUT_DIR/" 2>/dev/null || \
-cp "$MSYS_BIN/libicuuc78.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/icudt78.dll" "$OUTPUT_DIR/" 2>/dev/null || \
-cp "$MSYS_BIN/libicudt78.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+copy_dll "libicuin78.dll" "$OUTPUT_DIR"
+copy_dll "libicuuc78.dll" "$OUTPUT_DIR"
+copy_dll "libicudt78.dll" "$OUTPUT_DIR"
 
 # Double conversion library
-cp "$MSYS_BIN/libdouble-conversion.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+copy_dll "libdouble-conversion.dll" "$OUTPUT_DIR"
 
 # libsodium - CRITICAL for encryption
-cp "$MSYS_BIN/libsodium-26.dll" "$OUTPUT_DIR/" 2>/dev/null || \
-cp "$MSYS_BIN/libsodium.dll" "$OUTPUT_DIR/" 2>/dev/null || \
-cp "$MSYS_BIN/libsodium-23.dll" "$OUTPUT_DIR/" 2>/dev/null || \
-{ echo "WARNING: libsodium DLL not found!"; }
+copy_dll "libsodium-26.dll" "$OUTPUT_DIR"
 
 # Additional Qt dependencies
-cp "$MSYS_BIN/libpcre2-16-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libzstd.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libharfbuzz-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libfreetype-6.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libpng16-16.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libbz2-1.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libbrotlidec.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libbrotlicommon.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libglib-2.0-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libintl-8.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libiconv-2.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libgraphite2.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+copy_dll "libpcre2-16-0.dll" "$OUTPUT_DIR"
+copy_dll "libzstd.dll" "$OUTPUT_DIR"
+copy_dll "libharfbuzz-0.dll" "$OUTPUT_DIR"
+copy_dll "libfreetype-6.dll" "$OUTPUT_DIR"
+copy_dll "libpng16-16.dll" "$OUTPUT_DIR"
+copy_dll "libbz2-1.dll" "$OUTPUT_DIR"
+copy_dll "libbrotlidec.dll" "$OUTPUT_DIR"
+copy_dll "libbrotlicommon.dll" "$OUTPUT_DIR"
+copy_dll "libglib-2.0-0.dll" "$OUTPUT_DIR"
+copy_dll "libintl-8.dll" "$OUTPUT_DIR"
+copy_dll "libiconv-2.dll" "$OUTPUT_DIR"
+copy_dll "libgraphite2.dll" "$OUTPUT_DIR"
+
+# CRITICAL: libmd4c.dll - Required by Qt6Gui
+copy_dll "libmd4c.dll" "$OUTPUT_DIR"
 
 # GPGME and dependencies
-cp "$MSYS_BIN/libgpgme-11.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libgpg-error-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libassuan-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libgcrypt-20.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libgnutls-30.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libnettle-8.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libhogweed-6.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libgmp-10.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libidn2-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libunistring-5.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libtasn1-6.dll" "$OUTPUT_DIR/" 2>/dev/null || true
-cp "$MSYS_BIN/libp11-kit-0.dll" "$OUTPUT_DIR/" 2>/dev/null || true
+copy_dll "libgpgme-11.dll" "$OUTPUT_DIR"
+copy_dll "libgpg-error-0.dll" "$OUTPUT_DIR"
+copy_dll "libassuan-0.dll" "$OUTPUT_DIR"
+copy_dll "libgcrypt-20.dll" "$OUTPUT_DIR"
+copy_dll "libgnutls-30.dll" "$OUTPUT_DIR"
+copy_dll "libnettle-8.dll" "$OUTPUT_DIR"
+copy_dll "libhogweed-6.dll" "$OUTPUT_DIR"
+copy_dll "libgmp-10.dll" "$OUTPUT_DIR"
+copy_dll "libidn2-0.dll" "$OUTPUT_DIR"
+copy_dll "libunistring-5.dll" "$OUTPUT_DIR"
+copy_dll "libtasn1-6.dll" "$OUTPUT_DIR"
+copy_dll "libp11-kit-0.dll" "$OUTPUT_DIR"
 
 # Create required directories
 mkdir -p "$OUTPUT_DIR/keys/public"
@@ -118,6 +142,11 @@ elif [ -d "/c/Program Files/gnupg/bin" ]; then
     cp "/c/Program Files/gnupg/bin/gpg.exe" "$OUTPUT_DIR/" 2>/dev/null || true
     cp "/c/Program Files/gnupg/bin/gpgconf.exe" "$OUTPUT_DIR/" 2>/dev/null || true
 fi
+
+# List all DLLs in output directory
+echo ""
+echo "DLLs in output directory:"
+ls -1 "$OUTPUT_DIR"/*.dll 2>/dev/null | wc -l | xargs echo "Total DLL count:"
 
 echo ""
 echo "========================================"
